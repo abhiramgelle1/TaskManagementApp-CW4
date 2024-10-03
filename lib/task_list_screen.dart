@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'task.dart'; // Make sure to have a task model as described earlier
+import 'task.dart'; // Ensure you have a Task model with name, isCompleted, and priority attributes.
 
 class TaskListScreen extends StatefulWidget {
   @override
@@ -11,26 +11,47 @@ class _TaskListScreenState extends State<TaskListScreen> {
   final TextEditingController _taskNameController = TextEditingController();
   String _selectedPriority = 'Low';
 
+  // Helper method to map priority to a numerical value for sorting.
+  int _priorityValue(String priority) {
+    switch (priority) {
+      case 'High':
+        return 1;
+      case 'Medium':
+        return 2;
+      case 'Low':
+        return 3;
+      default:
+        return 3; // Default to Low if unknown.
+    }
+  }
+
+  // Method to add tasks
   void _addTask() {
-    if (_taskNameController.text.isNotEmpty) {
+    final String taskName = _taskNameController.text;
+    if (taskName.isNotEmpty) {
       setState(() {
         tasks.add(Task(
-            name: _taskNameController.text,
-            isCompleted: false,
-            priority: _selectedPriority));
-        tasks.sort(
-            (a, b) => b.priority.compareTo(a.priority)); // Sorting by priority
+            name: taskName, isCompleted: false, priority: _selectedPriority));
         _taskNameController.clear();
+        _sortTasks();
       });
     }
   }
 
+  // Method to sort tasks by priority
+  void _sortTasks() {
+    tasks.sort((a, b) =>
+        _priorityValue(a.priority).compareTo(_priorityValue(b.priority)));
+  }
+
+  // Method to toggle completion status
   void _toggleTaskCompletion(int index) {
     setState(() {
       tasks[index].isCompleted = !tasks[index].isCompleted;
     });
   }
 
+  // Method to remove tasks
   void _removeTask(int index) {
     setState(() {
       tasks.removeAt(index);
@@ -46,29 +67,29 @@ class _TaskListScreenState extends State<TaskListScreen> {
       body: Column(
         children: <Widget>[
           Padding(
-            padding: EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8.0),
             child: TextField(
               controller: _taskNameController,
               decoration: InputDecoration(
                 labelText: 'Enter Task Name',
-                suffixIcon: DropdownButton<String>(
-                  value: _selectedPriority,
-                  underline: Container(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedPriority = newValue!;
-                    });
-                  },
-                  items: <String>['Low', 'Medium', 'High']
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
+                suffixIcon: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedPriority,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedPriority = newValue!;
+                      });
+                    },
+                    items: <String>['Low', 'Medium', 'High']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-              onSubmitted: (value) => _addTask(),
             ),
           ),
           Expanded(
@@ -81,7 +102,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   subtitle: Text('Priority: ${task.priority}'),
                   leading: Checkbox(
                     value: task.isCompleted,
-                    onChanged: (_) => _toggleTaskCompletion(index),
+                    onChanged: (bool? value) {
+                      _toggleTaskCompletion(index);
+                    },
                   ),
                   trailing: IconButton(
                     icon: Icon(Icons.delete),
