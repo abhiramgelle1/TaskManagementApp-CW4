@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'task.dart'; // Ensure you have a Task model with name, isCompleted, and priority attributes.
+import 'task.dart'; // Ensure the Task model is correctly defined in a separate file.
 
 class TaskListScreen extends StatefulWidget {
   @override
@@ -9,9 +9,42 @@ class TaskListScreen extends StatefulWidget {
 class _TaskListScreenState extends State<TaskListScreen> {
   List<Task> tasks = [];
   final TextEditingController _taskNameController = TextEditingController();
-  String _selectedPriority = 'Low';
+  String _selectedPriority = 'Low'; // Default priority
 
-  // Helper method to map priority to a numerical value for sorting.
+  // Add a task to the list
+  void _addTask() {
+    final String taskName = _taskNameController.text;
+    if (taskName.isNotEmpty) {
+      setState(() {
+        tasks.add(Task(name: taskName, priority: _selectedPriority));
+        _taskNameController.clear();
+        _sortTasks(); // Sort tasks every time a new one is added
+      });
+    }
+  }
+
+  // Toggle task completion status
+  void _toggleTaskCompletion(int index) {
+    setState(() {
+      tasks[index].isCompleted = !tasks[index].isCompleted;
+    });
+  }
+
+  // Remove a task from the list
+  void _removeTask(int index) {
+    setState(() {
+      tasks.removeAt(index);
+    });
+  }
+
+  // Sort tasks by priority
+  void _sortTasks() {
+    tasks.sort((Task a, Task b) {
+      return _priorityValue(a.priority).compareTo(_priorityValue(b.priority));
+    });
+  }
+
+  // Helper function to convert priority to numerical value
   int _priorityValue(String priority) {
     switch (priority) {
       case 'High':
@@ -21,45 +54,28 @@ class _TaskListScreenState extends State<TaskListScreen> {
       case 'Low':
         return 3;
       default:
-        return 3; // Default to Low if unknown.
+        return 3;
     }
   }
 
-  // Method to add tasks
-  void _addTask() {
-    final String taskName = _taskNameController.text;
-    if (taskName.isNotEmpty) {
-      setState(() {
-        tasks.add(Task(
-            name: taskName, isCompleted: false, priority: _selectedPriority));
-        _taskNameController.clear();
-        _sortTasks();
-      });
+  // Function to count completed and incomplete tasks
+  Map<String, int> _countTasks() {
+    int completed = 0;
+    int incomplete = 0;
+    for (Task task in tasks) {
+      if (task.isCompleted) {
+        completed++;
+      } else {
+        incomplete++;
+      }
     }
-  }
-
-  // Method to sort tasks by priority
-  void _sortTasks() {
-    tasks.sort((a, b) =>
-        _priorityValue(a.priority).compareTo(_priorityValue(b.priority)));
-  }
-
-  // Method to toggle completion status
-  void _toggleTaskCompletion(int index) {
-    setState(() {
-      tasks[index].isCompleted = !tasks[index].isCompleted;
-    });
-  }
-
-  // Method to remove tasks
-  void _removeTask(int index) {
-    setState(() {
-      tasks.removeAt(index);
-    });
+    return {'completed': completed, 'incomplete': incomplete};
   }
 
   @override
   Widget build(BuildContext context) {
+    Map<String, int> taskCount =
+        _countTasks(); // Call this here to update each time the state changes
     return Scaffold(
       appBar: AppBar(
         title: Text('Task Manager'),
@@ -80,8 +96,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                         _selectedPriority = newValue!;
                       });
                     },
-                    items: <String>['Low', 'Medium', 'High']
-                        .map<DropdownMenuItem<String>>((String value) {
+                    items: ['Low', 'Medium', 'High'].map((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
                         child: Text(value),
@@ -90,6 +105,15 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   ),
                 ),
               ),
+              onSubmitted: (_) =>
+                  _addTask(), // Add task when submitting the form
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              'Completed: ${taskCount['completed']} Incomplete: ${taskCount['incomplete']}',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(
